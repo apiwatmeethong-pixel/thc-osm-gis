@@ -856,10 +856,10 @@
       }
     }
 
-    async function loadHouseData() {
+    async function loadHouseData(preservePage) {
       var result = await callAPI("getHouseData");
       if (result && result.success) {
-        setupData(result.data);
+        setupData(result.data, preservePage);
       } else if (result) {
         console.error(result.message || "ไม่สามารถโหลดข้อมูลบ้านได้");
       }
@@ -902,7 +902,7 @@
     // ==========================================
     // 3. การจัดการข้อมูลและการแบ่งหน้า
     // ==========================================
-    function setupData(data) {
+    function setupData(data, preservePage) {
       try {
         if (!data || data.length < 2) return;
         globalHouseData = data; 
@@ -916,7 +916,18 @@
           filteredDataGlobal = allRows.filter(function(row) { return row[colMooIndex] == currentUser.moo; });
         }
         
-        currentPage = 1;
+        // ถ้ามีการค้นหาค้างอยู่ ให้กรองผลลัพธ์ซ้ำตามคำค้นเดิมด้วย ไม่งั้นจะเห็นข้อมูลทั้งหมดหลังบันทึก
+        var searchInput = document.getElementById('searchInput');
+        var searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        if (searchTerm !== '') {
+          var colHouseNoIndex = headers.indexOf('บ้านเลขที่');
+          filteredDataGlobal = filteredDataGlobal.filter(function(row) {
+            var houseNo = row[colHouseNoIndex] ? row[colHouseNoIndex].toString().toLowerCase() : "";
+            return houseNo.indexOf(searchTerm) !== -1;
+          });
+        }
+        
+        if (!preservePage) currentPage = 1;
         updateTableAndPagination(); 
         
         google.charts.setOnLoadCallback(function() { 
@@ -1079,7 +1090,7 @@
       var res = await callAPI("updateHouseData", data);
       alert(res.message || res || "บันทึกเรียบร้อย");
       editModal.hide();
-      await loadHouseData();
+      await loadHouseData(true);
       btn.disabled = false; btn.innerText = "บันทึกข้อมูล";
     }
 
@@ -1098,7 +1109,7 @@
         var res = await callAPI("deleteHouseData", { hcode: hcode, userId: currentUser ? currentUser.userId : '' });
         alert(res.message || "ดำเนินการเรียบร้อย");
         if(res && res.success) {
-          await loadHouseData();
+          await loadHouseData(true);
         }
       }
     }
