@@ -361,6 +361,7 @@
                 <thead class="table-success text-nowrap">
                   <tr>
                     <th>บ้านเลขที่</th>
+                    <th>รหัสประจำบ้าน 11 หลัก</th>
                     <th>ชุมชน</th>
                     <th>อสม.ที่ดูแล</th>
                     <th>สถานะ</th>
@@ -368,7 +369,7 @@
                   </tr>
                 </thead>
                 <tbody id="tableBody">
-                  <tr><td colspan="5" class="text-center text-muted">กำลังโหลดข้อมูล...</td></tr>
+                  <tr><td colspan="6" class="text-center text-muted">กำลังโหลดข้อมูล...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -468,14 +469,15 @@
             <table class="table table-bordered align-middle">
               <thead class="table-light text-center">
                 <tr>
-                  <th style="width: 10%;">ลำดับ</th>
-                  <th style="width: 25%;">บ้านเลขที่</th>
-                  <th style="width: 45%;">อสม. ผู้รับผิดชอบ</th>
-                  <th style="width: 20%;">สถานะ</th>
+                  <th style="width: 8%;">ลำดับ</th>
+                  <th style="width: 18%;">บ้านเลขที่</th>
+                  <th style="width: 22%;">รหัสประจำบ้าน 11 หลัก</th>
+                  <th style="width: 37%;">อสม. ผู้รับผิดชอบ</th>
+                  <th style="width: 15%;">สถานะ</th>
                 </tr>
               </thead>
               <tbody id="reportTableBody">
-                <tr><td colspan="4" class="text-center py-4">รอการเลือกข้อมูล...</td></tr>
+                <tr><td colspan="5" class="text-center py-4">รอการเลือกข้อมูล...</td></tr>
               </tbody>
             </table>
           </div>
@@ -546,6 +548,10 @@
           <div class="mb-3 text-center">
             <span class="text-muted">บ้านเลขที่</span>
             <h4 id="displayHouseNo" class="text-primary fw-bold"></h4>
+          </div>
+          <div class="mb-3 text-center">
+            <span class="text-muted small">รหัสประจำบ้าน 11 หลัก</span>
+            <div id="displayHouseId11" class="fw-bold font-monospace text-secondary">-</div>
           </div>
           <hr>
           <div class="row">
@@ -713,7 +719,7 @@
     // ==========================================
     // 0. API CONFIG / FETCH HELPER
     // ==========================================
-    const API_URL = "https://script.google.com/macros/s/AKfycbyg6gfVGwNxKocvse-OKqQYjl1UfX3c7lDRb6x7vd6Okj457MdjkEq2FnsC9AkWOD0zGg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzkLmtewibOlfUN48l9-wxBoxauTEv6AekjqUFXAXy4HHuTYLMRDU4MCSRcNMioISdDbQ/exec";
     const API_KEY = "Tph-Osm-Gis-SecureKey-2026-XyZ"; 
 
     async function callAPI(action, params = {}) {
@@ -989,6 +995,7 @@
       var colLat = headers.indexOf('ละติจูด');
       var colLng = headers.indexOf('ลองจิจูด');
       var colNote = headers.indexOf('หมายเหตุ'); 
+      var colHouseId11 = headers.indexOf('รหัสประจำบ้าน 11 หลัก');
 
       dataSubset.forEach(function(row) {
         var status = (row[colStatus] || '').toString().trim();
@@ -996,6 +1003,9 @@
         var safeComm = row[colComm].toString().replace(/'/g, "\\'");
         var safeAsm = row[colAsm].toString().replace(/'/g, "\\'");
         var safeNote = (colNote > -1 && row[colNote]) ? row[colNote].toString().replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
+        var houseId11 = (colHouseId11 > -1 && row[colHouseId11]) ? row[colHouseId11].toString().trim() : '';
+        var safeHouseId11 = houseId11.replace(/'/g, "\\'");
+        var houseId11Display = houseId11 ? '<span class="font-monospace">' + houseId11 + '</span>' : '<span class="text-muted">-</span>';
 
         var deleteBtn = '';
         if (currentUser && currentUser.type === 'admin') {
@@ -1006,11 +1016,12 @@
 
         var trHTML = '<tr>' +
           '<td>' + row[colHouseNo] + '</td>' +
+          '<td>' + houseId11Display + '</td>' +
           '<td>' + row[colComm] + '</td>' +
           '<td>' + row[colAsm] + '</td>' +
           '<td>' + badge + '</td>' +
           '<td>' +
-            '<button class="btn btn-sm btn-warning" onclick="openEditModal(\'' + row[colHcode] + '\',\'' + row[colHouseNo] + '\',\'' + safeComm + '\',\'' + safeAsm + '\',\'' + status + '\',\'' + row[colLat] + '\',\'' + row[colLng] + '\',\'' + row[colMoo] + '\',\'' + safeNote + '\')">' +
+            '<button class="btn btn-sm btn-warning" onclick="openEditModal(\'' + row[colHcode] + '\',\'' + row[colHouseNo] + '\',\'' + safeComm + '\',\'' + safeAsm + '\',\'' + status + '\',\'' + row[colLat] + '\',\'' + row[colLng] + '\',\'' + row[colMoo] + '\',\'' + safeNote + '\',\'' + safeHouseId11 + '\')">' +
               '<i class="bi bi-pencil-square"></i> แก้ไข' +
             '</button>' +
             deleteBtn +
@@ -1032,9 +1043,10 @@
       });
     }
 
-    function openEditModal(hcode, houseNo, comm, asm, status, lat, lng, moo, note) {
+    function openEditModal(hcode, houseNo, comm, asm, status, lat, lng, moo, note, houseId11) {
       document.getElementById('editHcode').value = hcode;
       document.getElementById('displayHouseNo').innerText = houseNo;
+      document.getElementById('displayHouseId11').innerText = (houseId11 && houseId11 !== 'undefined' && houseId11 !== '') ? houseId11 : '- ไม่มีข้อมูล -';
       document.getElementById('editMoo').value = (moo !== 'undefined' && moo !== '') ? moo : '-';
       
       updateCommunityDropdown(moo, comm);
@@ -1326,7 +1338,8 @@
         hcode: headers.indexOf('hcode'),
         comm: headers.indexOf('ชุมชนบ้าน'),
         moo: headers.indexOf('หมู่ที่'),
-        status: headers.indexOf('สถานะการดูแล')
+        status: headers.indexOf('สถานะการดูแล'),
+        houseId11: headers.indexOf('รหัสประจำบ้าน 11 หลัก')
       };
 
       var bounds = [];
@@ -1343,18 +1356,20 @@
 
         var status = row[col.status] || 'ยังไม่ยืนยัน';
         var color = (status === 'ยืนยันข้อมูล') ? '#198754' : '#dc3545'; 
+        var houseId11 = row[col.houseId11] || '';
 
         var marker = L.circleMarker([lat, lng], {
           radius: 8, color: "#ffffff", weight: 1, fillColor: color, fillOpacity: 0.8
         });
 
         var popupHTML = '<b>บ้านเลขที่:</b> ' + row[col.house] + '<br>' +
+          '<b>รหัสประจำบ้าน 11 หลัก:</b> ' + (houseId11 || 'ไม่มีข้อมูล') + '<br>' +
           '<b>หมู่:</b> ' + row[col.moo] + '<br>' +
           '<b>ชุมชน:</b> ' + row[col.comm] + '<br>' +
           '<b>อสม:</b> ' + (row[col.asm] || 'ไม่มีข้อมูล') + '<br>' +
           '<b>สถานะ:</b> ' + status + '<br>' +
           '<button class="btn btn-sm btn-warning mt-2 w-100" ' +
-          'onclick="openEditModal(\'' + row[col.hcode] + '\',\'' + row[col.house] + '\',\'' + row[col.comm] + '\',\'' + row[col.asm] + '\',\'' + status + '\',\'' + lat + '\',\'' + lng + '\',\'' + row[col.moo] + '\')">' +
+          'onclick="openEditModal(\'' + row[col.hcode] + '\',\'' + row[col.house] + '\',\'' + row[col.comm] + '\',\'' + row[col.asm] + '\',\'' + status + '\',\'' + lat + '\',\'' + lng + '\',\'' + row[col.moo] + '\',\'\',\'' + houseId11 + '\')">' +
           '<i class="bi bi-pencil-square"></i> แก้ไขข้อมูล' +
           '</button>';
 
@@ -1611,6 +1626,7 @@
       var colLng = headers.indexOf('ลองจิจูด');
       var colAsm = headers.indexOf('อสม');
       var colStatus = headers.indexOf('สถานะการดูแล');
+      var colHouseId11 = headers.indexOf('รหัสประจำบ้าน 11 หลัก');
 
       var houseData = globalHouseData.slice(1).find(function(r) { return r[colMoo] == moo && r[colComm] == comm && r[colHouse] == houseNo; });
 
@@ -1637,6 +1653,7 @@
 
         var status = houseData[colStatus] || 'ยังไม่ยืนยัน';
         var color = (status === 'ยืนยันข้อมูล') ? '#198754' : '#dc3545';
+        var houseId11 = (colHouseId11 > -1 && houseData[colHouseId11]) ? houseData[colHouseId11] : '';
 
         searchMarker = L.circleMarker([lat, lng], {
           radius: 12, color: "#fff", weight: 2, fillColor: color, fillOpacity: 0.9
@@ -1647,6 +1664,7 @@
           '<small class="text-muted">หมู่ ' + houseData[colMoo] + ' ชุมชน' + houseData[colComm] + '</small><br>' +
           '<hr class="my-2">' +
           '<div class="text-start">' +
+            '<b>รหัสประจำบ้าน 11 หลัก:</b> <span class="font-monospace">' + (houseId11 || 'ไม่มีข้อมูล') + '</span><br>' +
             '<b>อสม. ผู้ดูแล:</b> <span class="text-primary fw-bold">' + (houseData[colAsm] || 'ไม่มีข้อมูล') + '</span><br>' +
             '<b>สถานะ:</b> <span class="' + (status === 'ยืนยันข้อมูล' ? 'text-success' : 'text-danger') + '">' + status + '</span>' +
           '</div>' +
@@ -1717,7 +1735,7 @@
       var header = document.getElementById('reportHeader');
 
       if(!moo) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4">กรุณาเลือกหมู่เพื่อแสดงข้อมูล</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4">กรุณาเลือกหมู่เพื่อแสดงข้อมูล</td></tr>';
         header.innerText = 'กรุณาเลือกหมู่เพื่อแสดงรายงาน';
         reportFilteredData = [];
         updateReportPaginationUI();
@@ -1756,7 +1774,7 @@
       tbody.innerHTML = '';
       
       if(reportFilteredData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-4">ไม่พบข้อมูลบ้านที่ค้นหา</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">ไม่พบข้อมูลบ้านที่ค้นหา</td></tr>';
         updateReportPaginationUI();
         return;
       }
@@ -1768,16 +1786,19 @@
       var colHouse = headers.indexOf('บ้านเลขที่');
       var colAsm = headers.indexOf('อสม');
       var colStatus = headers.indexOf('สถานะการดูแล');
+      var colHouseId11 = headers.indexOf('รหัสประจำบ้าน 11 หลัก');
 
       var count = start + 1; 
       pageData.forEach(function(r) {
         var asmName = r[colAsm] || '-';
         var status = r[colStatus] || 'ยังไม่ยืนยัน';
         var statusIcon = status === 'ยืนยันข้อมูล' ? '✔️ ยืนยันแล้ว' : 'รอตรวจสอบ';
+        var houseId11 = (colHouseId11 > -1 && r[colHouseId11]) ? r[colHouseId11] : '-';
         
         var trHTML = '<tr>' +
           '<td class="text-center">' + count++ + '</td>' +
           '<td class="text-center fw-bold">' + r[colHouse] + '</td>' +
+          '<td class="text-center font-monospace">' + houseId11 + '</td>' +
           '<td>' + asmName + '</td>' +
           '<td class="text-center">' + statusIcon + '</td>' +
         '</tr>';
