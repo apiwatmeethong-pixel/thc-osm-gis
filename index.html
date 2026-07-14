@@ -1927,11 +1927,16 @@
       reportCurrentPage += step;
       renderReportPage();
     }
-// 🌟 โดโหลดข้อมูลประวัติจากฐานข้อมูลมาพักไว้ในหน้าเว็บ
+// ===================================================
+    // 🌟 6. ระบบควบคุมประวัติกิจกรรม (PDPA Audit Trail)
+    // ===================================================
+
+    // 🌟 โหลดข้อมูลประวัติจากฐานข้อมูลมาพักไว้ในหน้าเว็บ
     async function loadAuditLog() {
       var tbody = document.getElementById('logTableBody');
       if(!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">กำลังดึงข้อมูล Log ตามมาตรฐาน PDPA...</td></tr>';
+      // เพิ่มสปินเนอร์หมุนสวยงามระหว่างรอโหลดข้อมูลขนาดใหญ่
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted"><div class="spinner-border spinner-border-sm text-danger me-2"></div>กำลังดึงข้อมูล Log ตามมาตรฐาน PDPA...</td></tr>';
       
       var result = await callAPI("getAuditLog");
       if (result && result.success) {
@@ -2024,14 +2029,13 @@
     function downloadLogCSV() {
       if (globalLogData.length === 0) { alert("ไม่มีข้อมูลประวัติกิจกรรมให้ดาวน์โหลดสำรองครับ"); return; }
       
-      // ใส่เครื่องหมาย BOM (\uFEFF) เพื่อให้ Microsoft Excel สามารถเปิดอ่านฟอนต์ภาษาไทยได้ทันทีไม่เพี้ยน
       var csvContent = "\uFEFF"; 
       csvContent += "Timestamp,User,Role,Action Type,Action Name,Target ID,Status,Details\n";
       
       globalLogData.forEach(function(row) {
         var processedRow = row.map(function(cell) {
           var str = cell ? cell.toString().replace(/"/g, '""') : '';
-          return '"' + str + '"'; // ครอบด้วยเครื่องหมายคำพูดป้องกันเรื่องลูกน้ำเพี้ยน
+          return '"' + str + '"'; 
         });
         csvContent += processedRow.join(",") + "\n";
       });
@@ -2050,18 +2054,22 @@
       document.body.removeChild(link);
     }
 
-    // 🌟 🧹 ระบบสั่งล้างชีทเพื่อเคลียร์หน่วยความจำป้องกันฐานข้อมูลบวม
+    // 🌟 🧹 ระบบสั่งล้างชีทเพื่อเคลียร์หน่วยความจำป้องกันฐานข้อมูลบวม (แก้ไขจุดเสถียรภาพเรียบร้อย)
     async function clearLogSheet() {
+      // ✅ ล็อคเป้าหมายปุ่มกดไว้ที่บรรทัดแรกสุด ก่อนโดนหน้าต่าง confirm ขัดจังหวะระบบ
+      var btn = (window.event && window.event.target) ? window.event.target : null;
+      var originalHTML = btn ? btn.innerHTML : '<i class="bi bi-trash3"></i> ล้างข้อมูลค้างชีท';
+
       if (confirm("⚠️ ข้อควรระวังขั้นวิกฤตความปลอดภัย:\nคุณกำลังจะลบข้อมูลแถวกิจกรรมทั้งหมดออกจากชีท AuditLog เพื่อเพิ่มพื้นที่ให้ Google Sheets\n\nกรุณาตรวจสอบว่าคุณกดปุ่ม 'สำรองข้อมูล (CSV)' เพื่อเก็บไฟล์หลักฐานลงคอมพิวเตอร์ของคุณแล้วเรียบร้อย\n\nคุณยืนยันที่จะทำการล้างข้อมูลกิจกรรมทั้งหมดหรือไม่?")) {
-        var btn = event.target;
-        btn.disabled = true; btn.innerText = "กำลังสั่งเคลียร์หน้าชีท...";
+        
+        if (btn) { btn.disabled = true; btn.innerText = "กำลังสั่งเคลียร์หน้าชีท..."; }
         
         var res = await callAPI("clearAuditLog");
         alert(res.message || "ล้างฐานข้อมูลสำเร็จ");
         
-        btn.disabled = false; btn.innerHTML = '<i class="bi bi-trash3"></i> ล้างข้อมูลค้างชีท';
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
         if (res && res.success) {
-          await loadAuditLog(); // โหลดหน้าตารางเพื่อแสดงสถานะที่ล้างแล้ว
+          await loadAuditLog(); 
         }
       }
     }
