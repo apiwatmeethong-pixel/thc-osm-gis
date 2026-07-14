@@ -723,32 +723,41 @@
     const API_KEY = "Tph-Osm-Gis-SecureKey-2026-XyZ"; 
 
     async function callAPI(action, params = {}) {
-      try {
-        const url = new URL(API_URL);
-        url.searchParams.set("action", action);
-        url.searchParams.set("apiKey", API_KEY);
+  try {
+    const url = new URL(API_URL);
+    url.searchParams.set("action", action);
+    url.searchParams.set("apiKey", API_KEY);
 
-        Object.keys(params).forEach(function(key) {
-          var value = params[key];
-          if (value === undefined || value === null) return;
-          if (typeof value === "object") {
-            url.searchParams.set(key, JSON.stringify(value));
-          } else {
-            url.searchParams.set(key, value);
-          }
-        });
-
-        const response = await fetch(url.toString(), {
-          method: "GET",
-          cache: "no-store"
-        });
-
-        return await response.json();
-      } catch (error) {
-        console.error("API Error:", error);
-        return { success: false, message: error.message || "API error" };
-      }
+    // 🌟 ส่วนที่เพิ่มขึ้นมาตามมาตรฐานความปลอดภัย PDPA:
+    // หากมีข้อมูลการล็อกอินของ User อยู่ในระบบ ให้แนบข้อมูลผู้ใช้ปัจจุบันส่งไปให้ Backend บันทึก Log เสมอ
+    if (currentUser) {
+      url.searchParams.set("currentUser", JSON.stringify({
+        user: currentUser.username || currentUser.user || document.getElementById('loginUser').value,
+        type: currentUser.type || "user"
+      }));
     }
+
+    Object.keys(params).forEach(function(key) {
+      var value = params[key];
+      if (value === undefined || value === null) return;
+      if (typeof value === "object") {
+        url.searchParams.set(key, JSON.stringify(value));
+      } else {
+        url.searchParams.set(key, value);
+      }
+    });
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      cache: "no-store"
+    });
+
+    return await response.json();
+  } catch (error) {
+    console.error("API Error:", error);
+    return { success: false, message: error.message || "API error" };
+  }
+}
 
     // ==========================================
     // 1. ตัวแปรหลักและการตั้งค่า (Global Variables)
